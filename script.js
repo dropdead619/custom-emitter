@@ -1,51 +1,53 @@
 
 function superEmmiter() {
-    let events = [];
-    function subscribe(event, cb) {
-        if (events.find(el => el.eventName === event && !el.callbacks.includes(cb))) {
-            events.forEach(el => {
-                if (el.eventName === event) {
-                    el.callbacks.push(cb);
-                }
-            });
-        } else if (events.find(el => el.eventName === event && el.callbacks.includes(cb))) {
+    let events = {};
+
+    function on(event, cb) {
+        const isEventExists = events.hasOwnProperty(event);
+        if (event === '*') {
+            //Подписаться на все события
+            for (const e in events) {
+                events[e].push(cb);
+            }
+        } else if (isEventExists && !events[event].includes(cb)) {
+            events[event].push(cb);
+        } else if (isEventExists && events[event].includes(cb)) {
             return;
         } else {
-            events.push({ eventName: event, callbacks: [cb] });
+            events[event] = [cb];
         }
+        console.log('on', events);
     }
 
-    function unsubscribe(event, cb) {
-        if (events.find(el => el.eventName === event && el.callbacks.includes(cb))) {
-            events.forEach(el => {
-                if (el.eventName === event) {
-                    el.callbacks = el.callbacks.filter(c => c !== cb);
-                }
-            });
+    function off(event, cb) {
+        const isEventExists = events.hasOwnProperty(event);
+        if (!event && !cb) {
+            //Удалить все подписки на события
+            events = {};
+        } else if (!cb && isEventExists) {
+            //Удалить все подписки на конкретное событие
+            delete events[event];
+        } else if (isEventExists && events[event].includes(cb)) {
+            events[event] = events[event].filter(c => c !== cb);
         }
+        console.log('off', events);
     }
 
-    function emitByEvent(event, ...args) {
-        if (events.find(el => el.eventName === event)) {
-            events.find(el => el.eventName === event).callbacks.forEach(cb => cb(...args));
+    function emit(event, ...args) {
+        if (events.hasOwnProperty(event)) {
+            events[event].forEach(cb => cb(...args));
         };
     }
 
     return {
-        on: function (event, cb) {
-            subscribe(event, cb);
-        },
-        off: function (event, cb) {
-            unsubscribe(event, cb);
-        },
-        emit: function (event, ...args) {
-            emitByEvent(event, ...args);
-        },
+        on,
+        off,
+        emit,
     };
 }
 
-let test = (str) => {
-    console.log(str);
+let test = (str, str1) => {
+    console.log(str + ' ' + str1);
 }
 
 let test2 = (str) => {
@@ -64,4 +66,8 @@ emmiter.on('qoq', test2);
 emmiter.on('qoq1', test);
 emmiter.on('qoq2', test);
 
-emmiter.emit('qoq', 125);
+emmiter.on('*', test3);
+
+emmiter.off('qoq', test2);
+
+emmiter.emit('qoq', 'Sasha', 'Lava');
